@@ -7,7 +7,18 @@ var vows = require('vows'),
   existsSync = fs.existsSync || path.existsSync;
 
 var isWindows = process.platform == 'win32';
-var deleteCommand = isWindows ? 'rd /s ' : 'rm -rf ';
+var deleteDir = function(pathToDir) {
+  if (isWindows)
+    exec('rd /s /q ' + pathToDir);
+  else
+    exec('rm -rf ' + pathToDir);
+};
+var deleteFiles = function(filesWildcard) {
+  if (isWindows)
+    exec('del /q /f ' + filesWildcard);
+  else
+    exec('rm -rf ' + filesWildcard);
+};
 
 var withOptions = function(options) {
   return function() {
@@ -23,11 +34,10 @@ var fullPath = function(suffix) {
 };
 
 var cleanBundles = function(set) {
-  exec(deleteCommand + fullPath('test/data/' + set + '/public/javascripts/bundled'));
-  exec(deleteCommand + fullPath('test/data/' + set + '/public/stylesheets/bundled'));
-  exec(deleteCommand + fullPath('test/data/' + set + '/public/stylesheets/*.css'));
-  exec(deleteCommand + fullPath('test/data/' + set + '/public/stylesheets/**/*.css'));
-  exec(deleteCommand + fullPath('test/data/' + set + '/.assets.yml.json'));
+  deleteDir(fullPath('test/data/' + set + '/public/javascripts/bundled'));
+  deleteDir(fullPath('test/data/' + set + '/public/stylesheets/bundled'));
+  deleteFiles(fullPath('test/data/' + set + '/public/stylesheets/*.css'));
+  deleteFiles(fullPath('test/data/' + set + '/.assets.yml.json'));
 };
 
 var cacheData = function(set) {
@@ -120,40 +130,40 @@ exports.commandsSuite = vows.describe('binary commands').addBatch({
   }
 });
 
-// exports.packagingSuite = vows.describe('packaging all').addBatch({
-//   'packaging without gzipped version': {
-//     topic: withOptions('-r data/test1/public -c data/test1/assets.yml'),
-//     'should not give error': function(error, stdout) {
-//       assert.isNull(error);
-//     },
-//     'should compile css to less': function() {
-//       assert.hasFile('test1', 'stylesheets', 'one.css');
-//       assert.hasFile('test1', 'stylesheets', 'two.css');
-//     },
-//     'should bundle css into packages': function() {
-//       assert.hasBundledFile('test1', 'stylesheets', 'subset.css');
-//       assert.hasBundledFile('test1', 'stylesheets', 'all.css');
-//     },
-//     'should not bundle css into compressed packages': function() {
-//       assert.notHasBundledFile('test1', 'stylesheets', 'subset.css.gz');
-//       assert.notHasBundledFile('test1', 'stylesheets', 'all.css.gz');
-//     },
-//     'should not bundle css into compressed packages without embedded content': function() {
-//       assert.notHasBundledFile('test1', 'stylesheets', 'subset-noembed.css.gz');
-//       assert.notHasBundledFile('test1', 'stylesheets', 'all-noembed.css.gz');
-//     },
-//     'should bundle js into packages': function() {
-//       assert.hasBundledFile('test1', 'javascripts', 'subset.js');
-//       assert.hasBundledFile('test1', 'javascripts', 'all.js');
-//     },
-//     'should not bundle js into compressed packages': function() {
-//       assert.notHasBundledFile('test1', 'javascripts', 'subset.js.gz');
-//       assert.notHasBundledFile('test1', 'javascripts', 'all.js.gz');
-//     },
-//     teardown: function() {
-//       cleanBundles('test1');
-//     }
-//   }
+exports.packagingSuite = vows.describe('packaging all').addBatch({
+  'packaging without gzipped version': {
+    topic: withOptions('-r data/test1/public -c data/test1/assets.yml'),
+    'should not give error': function(error, stdout) {
+      assert.isNull(error);
+    },
+    'should compile css to less': function() {
+      assert.hasFile('test1', 'stylesheets', 'one.css');
+      assert.hasFile('test1', 'stylesheets', 'two.css');
+    },
+    'should bundle css into packages': function() {
+      assert.hasBundledFile('test1', 'stylesheets', 'subset.css');
+      assert.hasBundledFile('test1', 'stylesheets', 'all.css');
+    },
+    'should not bundle css into compressed packages': function() {
+      assert.notHasBundledFile('test1', 'stylesheets', 'subset.css.gz');
+      assert.notHasBundledFile('test1', 'stylesheets', 'all.css.gz');
+    },
+    'should not bundle css into compressed packages without embedded content': function() {
+      assert.notHasBundledFile('test1', 'stylesheets', 'subset-noembed.css.gz');
+      assert.notHasBundledFile('test1', 'stylesheets', 'all-noembed.css.gz');
+    },
+    'should bundle js into packages': function() {
+      assert.hasBundledFile('test1', 'javascripts', 'subset.js');
+      assert.hasBundledFile('test1', 'javascripts', 'all.js');
+    },
+    'should not bundle js into compressed packages': function() {
+      assert.notHasBundledFile('test1', 'javascripts', 'subset.js.gz');
+      assert.notHasBundledFile('test1', 'javascripts', 'all.js.gz');
+    },
+    teardown: function() {
+      cleanBundles('test1');
+    }
+  }});
 // }).addBatch({
 //   'packaging with gzipped version': {
 //     topic: withOptions('-r data/test1/public -c data/test1/assets.yml -g'),
@@ -313,8 +323,8 @@ exports.commandsSuite = vows.describe('binary commands').addBatch({
 //     },
 //     teardown: function() {
 //       cleanBundles('test2');
-//       exec(deleteCommand + fullPath('test/data/test2/public/images/one-*'));
-//       exec(deleteCommand + fullPath('test/data/test2/public/images/two-*'));
+//       deleteFiles(fullPath('test/data/test2/public/images/one-*'));
+//       deleteFiles(fullPath('test/data/test2/public/images/two-*'));
 //     }
 //   }
 // }).addBatch({
